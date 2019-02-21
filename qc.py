@@ -21,6 +21,10 @@ class Ui_QMessenger(object):
         QMessenger.setObjectName("QMessenger")
         QMessenger.resize(1280, 800)
         # Quit flag
+        self.flag = False
+        self.port = int(port)
+        self.host = host
+        self.name = "User123"
         self.centralwidget = QtWidgets.QWidget(QMessenger)
         self.centralwidget.setObjectName("centralwidget")
         self.MessageArea = QtWidgets.QScrollArea(self.centralwidget)
@@ -126,6 +130,54 @@ class Ui_QMessenger(object):
         self.YourId.setText(_translate("QMessenger", "You"))
     #Call this function when you need to update the list of online users
     def sendData(self):
+        text=self.ToSendText.toPlainText()
+        dataTobeSent=text
+        font=self.ChatArea.font()
+        font.setPointSize(13)
+        self.ChatArea.setFont(font)
+        textFormatted='{:>80}'.format(text)
+        #self.ChatArea.append(textFormatted)
+        # Initial prompt
+        self.prompt='[' + '@'.join((self.name, socket.gethostname().split('.')[0])) + ']> '
+        # Connect to server at port
+        try:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.connect((self.host, self.port))
+            print 'Connected to chat server@%d' % self.port
+            # Send my name...
+            send(self.sock,'NAME: ' + self.name)
+            data = receive(self.sock)
+            # Contains client address, set it
+            addr = data.split('CLIENT: ')[1]
+            self.prompt = '[' + '@'.join((self.name, addr)) + ']> '
+        except socket.error, e:
+            print 'Could not connect to chat server @%d' % self.port
+            sys.exit(1)
+            while not self.flag:
+                try:
+                    self.ChatArea.append(self.prompt)
+                    print "This is here"
+                    # Wait for input from stdin & socket
+                    inputready, outputready,exceptrdy = select.select([0, self.sock], [],[])
+                    for i in inputready:
+                        if i == 0:
+                            print "I came in"
+                            data = self.ToSendText.toPlainText()
+                            if data: send(self.sock, data)
+                        elif i == self.sock:
+                            data = receive(self.sock)
+                            if not data:
+                                print 'Shutting down.'
+                                self.flag = True
+                                break
+                            else:
+                                self.ChatArea.append(data)
+
+                except KeyboardInterrupt:
+                    print 'Interrupted.'
+                    self.sock.close()
+                    break
+        self.ToSendText.setPlainText("")
     def updateListOfOnlineUsers(self):
         self.inputs = self.encryptordata.inputs
         self.outputs = self.encryptordata.outputs
