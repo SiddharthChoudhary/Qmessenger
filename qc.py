@@ -6,25 +6,38 @@
 #
 # WARNING! All changes made in this file will be lost!
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtWidgets import QMessageBox
 from threading import Thread
+import EncryptorData
 import socket
 import sys
 import select
 import signal
 from threading import Thread
-from communication import send, receive
+from networkthread import *
 ChatArea={}
 server=None
 dataTobeSent = None
+loginServerIp="155.246.65.190"
 class Ui_QMessenger(object):
-    def setupUi(self, QMessenger,host='127.0.0.1',port=3490):
+    def __init__(self):
+        self.currentUser   = None
+        self.encryptorData = EncryptorData.EncryptorData()
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server.bind(('localhost',5000))
+        self.server.listen(5)
+        self.encryptorData.mymessenger_server_socket = self.server
+        self.encryptorData.inputs.extend([self.encryptorData.mymessenger_server_socket])
+        self.loginServer = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.loginServer.connect((loginServerIp,5050))
+        self.encryptorData.loginserversocket = self.loginServer
+        self.encryptorData.inputs.extend([self.encryptorData.loginserversocket])
+    def setupUi(self, QMessenger):
         QMessenger.setObjectName("QMessenger")
         QMessenger.resize(1280, 800)
         # Quit flag
-        self.flag = False
-        self.port = int(port)
-        self.host = host
-        self.name = "User123"
         self.centralwidget = QtWidgets.QWidget(QMessenger)
         self.centralwidget.setObjectName("centralwidget")
         self.MessageArea = QtWidgets.QScrollArea(self.centralwidget)
@@ -98,10 +111,10 @@ class Ui_QMessenger(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget)
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.OnlineUser = QtWidgets.QLabel(self.horizontalLayoutWidget)
-        self.OnlineUser.setAlignment(QtCore.Qt.AlignCenter)
-        self.OnlineUser.setObjectName("OnlineUser")
-        self.horizontalLayout.addWidget(self.OnlineUser)
+        # self.OnlineUser = QtWidgets.QLabel(self.horizontalLayoutWidget)
+        # self.OnlineUser.setAlignment(QtCore.Qt.AlignCenter)
+        # self.OnlineUser.setObjectName("OnlineUser")
+        # self.horizontalLayout.addWidget(self.OnlineUser)
         self.horizontalLayoutWidget_5 = QtWidgets.QWidget(self.scrollAreaWidgetContents_2)
         self.horizontalLayoutWidget_5.setGeometry(QtCore.QRect(30, 460, 301, 31))
         self.horizontalLayoutWidget_5.setObjectName("horizontalLayoutWidget_5")
@@ -118,6 +131,7 @@ class Ui_QMessenger(object):
         QMessenger.setStatusBar(self.statusbar)
         self.retranslateUi(QMessenger)
         QtCore.QMetaObject.connectSlotsByName(QMessenger)
+
     def retranslateUi(self, QMessenger):
         _translate = QtCore.QCoreApplication.translate
         QMessenger.setWindowTitle(_translate("QMessenger", "QMessenger"))
@@ -126,65 +140,53 @@ class Ui_QMessenger(object):
         self.SendButton.setText(_translate("QMessenger", "Send"))
         self.label_2.setText(_translate("QMessenger", "Recieve Encrypted message"))
         self.label.setText(_translate("QMessenger", "Sent Encrypted message"))
-        self.OnlineUser.setText(_translate("QMessenger", "#user234"))
+        #self.OnlineUser.setText(_translate("QMessenger", "#user234"))
         self.YourId.setText(_translate("QMessenger", "You"))
-    #Call this function when you need to update the list of online users
+        self.updateListOfOnlineUsers()
     def sendData(self):
-        text=self.ToSendText.toPlainText()
-        dataTobeSent=text
-        font=self.ChatArea.font()
-        font.setPointSize(13)
-        self.ChatArea.setFont(font)
-        textFormatted='{:>80}'.format(text)
-        #self.ChatArea.append(textFormatted)
-        # Initial prompt
-        self.prompt='[' + '@'.join((self.name, socket.gethostname().split('.')[0])) + ']> '
-        # Connect to server at port
-        try:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.connect((self.host, self.port))
-            print 'Connected to chat server@%d' % self.port
-            # Send my name...
-            send(self.sock,'NAME: ' + self.name)
-            data = receive(self.sock)
-            # Contains client address, set it
-            addr = data.split('CLIENT: ')[1]
-            self.prompt = '[' + '@'.join((self.name, addr)) + ']> '
-        except socket.error, e:
-            print 'Could not connect to chat server @%d' % self.port
-            sys.exit(1)
-            while not self.flag:
-                try:
-                    self.ChatArea.append(self.prompt)
-                    print "This is here"
-                    # Wait for input from stdin & socket
-                    inputready, outputready,exceptrdy = select.select([0, self.sock], [],[])
-                    for i in inputready:
-                        if i == 0:
-                            print "I came in"
-                            data = self.ToSendText.toPlainText()
-                            if data: send(self.sock, data)
-                        elif i == self.sock:
-                            data = receive(self.sock)
-                            if not data:
-                                print 'Shutting down.'
-                                self.flag = True
-                                break
-                            else:
-                                self.ChatArea.append(data)
+        if self.currentUser is None:
+           msg = QMessageBox()
+           msg.setIcon(QMessageBox.Information)
+           msg.setText("You haven't selected any user yet to chat with")
+           msg.setInformativeText("Please click on any user from the right side of your User's list")
+           msg.setWindowTitle("No User Selected")
+           msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+           retval = msg.exec_()
+        else:
+            for o in self.encryptorData.outputs:
+                if o.getsockname() is self.currentUser:
+                    message = self.ToSendText.toPlainText()
+                    send(o,message)
 
-                except KeyboardInterrupt:
-                    print 'Interrupted.'
-                    self.sock.close()
-                    break
-        self.ToSendText.setPlainText("")
+
+    def msgbtn(i):
+        print("Button pressed is:",i.__dict__)
+    #run this function everytime you get some changes in your list
     def updateListOfOnlineUsers(self):
-        self.inputs = self.encryptordata.inputs
-        self.outputs = self.encryptordata.outputs
+        onlineUsersList = []
+        for s in self.encryptorData.inputs:
+            if s is self.encryptorData.loginserversocket:
+                pass
+            elif s is self.encryptorData.mymessenger_server_socket:
+                #If it's you
+                onlineUsersList.append(s.getsockname())
+                pass
+            else:
+                 onlineUserList.append(s.getsockname())
+                #If some socket goes down then we need to remove it from the inputs
+        list = QtWidgets.QListWidget(self.onlineUsersArea)
+        for i in onlineUsersList:
+            list.addItem(str(i))
+        list.itemClicked.connect(self.itemClickedOnList)
+        self.outputs = self.encryptorData.outputs
+    def itemClickedOnList(self,item):
+        self.currentUser = item.text()
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     QMessenger = QtWidgets.QMainWindow()
+    networkThread = NetworkThread()
+    networkThread.start()
     ui = Ui_QMessenger()
     ui.setupUi(QMessenger)
     QMessenger.show()
