@@ -30,7 +30,7 @@ class Ui_QMessenger(object):
         self.encryptorData.mymessenger_server_socket = self.server
         self.encryptorData.inputs.extend([self.encryptorData.mymessenger_server_socket])
         self.loginServer = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.loginServer.connect((loginServerIp,5050))
+        self.loginServer.connect((loginServerIp,3490))
         self.encryptorData.loginserversocket = self.loginServer
         self.encryptorData.inputs.extend([self.encryptorData.loginserversocket])
     def setupUi(self, QMessenger):
@@ -39,7 +39,7 @@ class Ui_QMessenger(object):
         # Quit flag
         self.centralwidget = QtWidgets.QWidget(QMessenger)
         self.centralwidget.setObjectName("centralwidget")
-        
+
         self.MessageArea = QtWidgets.QScrollArea(self.centralwidget)
         self.MessageArea.setGeometry(QtCore.QRect(20, 90, 381, 391))
         self.MessageArea.setWidgetResizable(True)
@@ -47,18 +47,18 @@ class Ui_QMessenger(object):
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 379, 389))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
-        
+
         self.MessageArea.setWidget(self.scrollAreaWidgetContents)
         self.label_3 = QtWidgets.QLabel(self.centralwidget)
         self.label_3.setGeometry(QtCore.QRect(20, 70, 60, 16))
         self.label_3.setObjectName("label_3")
-        
+
         self.frame = QtWidgets.QFrame(self.centralwidget)
         self.frame.setGeometry(QtCore.QRect(20, 510, 741, 51))
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
-        
+
         self.ToSendText = QtWidgets.QPlainTextEdit(self.frame)
         self.ToSendText.setGeometry(QtCore.QRect(10, 10, 581, 31))
         self.ToSendText.setObjectName("ToSendText")
@@ -66,23 +66,23 @@ class Ui_QMessenger(object):
         self.SendButton.setGeometry(QtCore.QRect(620, 10, 91, 31))
         self.SendButton.setObjectName("SendButton")
         self.SendButton.clicked.connect(self.sendData)
-        
+
         self.frame_2 = QtWidgets.QFrame(self.centralwidget)
         self.frame_2.setGeometry(QtCore.QRect(420, 40, 401, 451))
         self.frame_2.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_2.setObjectName("frame_2")
-        
+
         self.verticalLayoutWidget = QtWidgets.QWidget(self.frame_2)
         self.verticalLayoutWidget.setGeometry(QtCore.QRect(29, 40, 161, 391))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
-        
+
         self.SendEncryptedMessagelistView = QtWidgets.QListView(self.verticalLayoutWidget)
         self.SendEncryptedMessagelistView.setObjectName("SendEncryptedMessagelistView")
-        
+
         self.verticalLayout_2.addWidget(self.SendEncryptedMessagelistView)
         self.verticalLayoutWidget_2 = QtWidgets.QWidget(self.frame_2)
         self.verticalLayoutWidget_2.setGeometry(QtCore.QRect(220, 40, 160, 391))
@@ -90,24 +90,24 @@ class Ui_QMessenger(object):
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_2)
         self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
-        
+
         self.RecieveEncryptedMessageListview = QtWidgets.QListView(self.verticalLayoutWidget_2)
         self.RecieveEncryptedMessageListview.setObjectName("RecieveEncryptedMessageListview")
-        
+
         self.verticalLayout_3.addWidget(self.RecieveEncryptedMessageListview)
-        
+
         self.label_2 = QtWidgets.QLabel(self.frame_2)
         self.label_2.setGeometry(QtCore.QRect(210, 20, 181, 16))
         self.label_2.setObjectName("label_2")
         self.label = QtWidgets.QLabel(self.frame_2)
         self.label.setGeometry(QtCore.QRect(30, 20, 151, 16))
         self.label.setObjectName("label")
-        
+
         self.onlineUsersArea = QtWidgets.QScrollArea(self.centralwidget)
         self.onlineUsersArea.setGeometry(QtCore.QRect(840, 30, 366, 611))
         self.onlineUsersArea.setWidgetResizable(True)
         self.onlineUsersArea.setObjectName("onlineUsersArea")
-        
+
         self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
         self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 364, 609))
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
@@ -195,10 +195,10 @@ class Ui_QMessenger(object):
                     chatAreaObject.setObjectName(str(s.getpeername())+"ChatArea")
                     self.encryptorData.chatAreaDictionary[chatAreaObject.objectName()] = chatAreaObject
                 onlineUsersList.append(s.getpeername() if s.getpeername() else s.getsockname())
-                #If some socket goes down then we need to remove it from the inputs     
+                #If some socket goes down then we need to remove it from the inputs
         self.list.clear()
         for i in onlineUsersList:
-            self.list.addItem(str(i))   
+            self.list.addItem(str(i))
         self.outputs = self.encryptorData.outputs
         print("online users list is ",onlineUsersList)
 
@@ -211,7 +211,7 @@ class Ui_QMessenger(object):
         particularUserschatArea.show()
         # print("Size is",self.encryptorData.chatAreaDictionary)
         # if item.text() in self.encryptorData.chatAreaDictionary:
-        #     if item.text() is not None:        
+        #     if item.text() is not None:
         #         self.verticalLayout = self.encryptorData.chatAreaDictionary[item.text()]
         #     else:
 
@@ -219,7 +219,7 @@ class Ui_QMessenger(object):
         #self.encryptorData.chatAreaDictionary[item.text()] = verticalLayout
         # else:
         #     print("It's not synchronised")
-            
+
 
 if __name__ == "__main__":
     import sys

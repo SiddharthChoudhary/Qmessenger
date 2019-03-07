@@ -8,6 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from threading import Thread
+import select
 import socket, sys
 server = None
 class Ui_MainWindow(object):
@@ -47,6 +48,7 @@ class LoginServerThread(Thread):
         Thread.__init__(self)
         self.ui=ui
         self.listofUsers = []
+        self.running=True
     def run(self):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.setblocking(0)
@@ -54,19 +56,22 @@ class LoginServerThread(Thread):
         server.listen(5)
         inputs =[server,sys.stdin]
         outputs= []
-        while running:
+        while self.running:
             try:
-                    inputready,outputready,exceptready = select.select(inputs, self.outputs, [])
-                except select.error, e:
-                    break
-                except socket.error, e:
+                    inputready,outputready,exceptready = select.select(inputs, outputs, inputs,1)
+            except Exception as e:
+                print("Got exception",e)
+                break
+            except Exception as e:
+                    print("Got exception", e)
                     break
             for s in inputready:
                 if s is server:
+                    print("I am runing")
                     client, address = server.accept()
                     inputs.extend([client])
                     for o in outputs:
-                        send(o,listofUsers)
+                        send(o,self.listofUsers)
                     client.setblocking(0)
                     outputs.append([client])
                     pass
@@ -81,7 +86,7 @@ class LoginServerThread(Thread):
                 else:
                     try:
                         pass
-                    except socket.error, e:
+                    except Exception as e:
                         inputs.remove(s)
                         self.outputs.remove(s)
 
@@ -93,6 +98,7 @@ if __name__ == "__main__":
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
+    loginServer = LoginServerThread(ui)
+    loginServer.start()
     MainWindow.show()
     sys.exit(app.exec_())
-
