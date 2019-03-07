@@ -25,7 +25,6 @@ class Ui_QMessenger(object):
         self.currentUser   = None
         self.encryptorData = EncryptorData.EncryptorData()
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind(('localhost',5000))
         self.server.listen(5)
         self.encryptorData.mymessenger_server_socket = self.server
@@ -40,6 +39,7 @@ class Ui_QMessenger(object):
         # Quit flag
         self.centralwidget = QtWidgets.QWidget(QMessenger)
         self.centralwidget.setObjectName("centralwidget")
+        
         self.MessageArea = QtWidgets.QScrollArea(self.centralwidget)
         self.MessageArea.setGeometry(QtCore.QRect(20, 90, 381, 391))
         self.MessageArea.setWidgetResizable(True)
@@ -47,21 +47,18 @@ class Ui_QMessenger(object):
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 379, 389))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.ChatArea = QtWidgets.QTextEdit(self.scrollAreaWidgetContents)
-        self.ChatArea.setReadOnly(True)
-        self.ChatArea.setObjectName("ChatArea")
-        self.verticalLayout.addWidget(self.ChatArea)
+        
         self.MessageArea.setWidget(self.scrollAreaWidgetContents)
         self.label_3 = QtWidgets.QLabel(self.centralwidget)
         self.label_3.setGeometry(QtCore.QRect(20, 70, 60, 16))
         self.label_3.setObjectName("label_3")
+        
         self.frame = QtWidgets.QFrame(self.centralwidget)
         self.frame.setGeometry(QtCore.QRect(20, 510, 741, 51))
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
+        
         self.ToSendText = QtWidgets.QPlainTextEdit(self.frame)
         self.ToSendText.setGeometry(QtCore.QRect(10, 10, 581, 31))
         self.ToSendText.setObjectName("ToSendText")
@@ -69,19 +66,23 @@ class Ui_QMessenger(object):
         self.SendButton.setGeometry(QtCore.QRect(620, 10, 91, 31))
         self.SendButton.setObjectName("SendButton")
         self.SendButton.clicked.connect(self.sendData)
+        
         self.frame_2 = QtWidgets.QFrame(self.centralwidget)
         self.frame_2.setGeometry(QtCore.QRect(420, 40, 401, 451))
         self.frame_2.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_2.setObjectName("frame_2")
+        
         self.verticalLayoutWidget = QtWidgets.QWidget(self.frame_2)
         self.verticalLayoutWidget.setGeometry(QtCore.QRect(29, 40, 161, 391))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
+        
         self.SendEncryptedMessagelistView = QtWidgets.QListView(self.verticalLayoutWidget)
         self.SendEncryptedMessagelistView.setObjectName("SendEncryptedMessagelistView")
+        
         self.verticalLayout_2.addWidget(self.SendEncryptedMessagelistView)
         self.verticalLayoutWidget_2 = QtWidgets.QWidget(self.frame_2)
         self.verticalLayoutWidget_2.setGeometry(QtCore.QRect(220, 40, 160, 391))
@@ -89,19 +90,24 @@ class Ui_QMessenger(object):
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_2)
         self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
+        
         self.RecieveEncryptedMessageListview = QtWidgets.QListView(self.verticalLayoutWidget_2)
         self.RecieveEncryptedMessageListview.setObjectName("RecieveEncryptedMessageListview")
+        
         self.verticalLayout_3.addWidget(self.RecieveEncryptedMessageListview)
+        
         self.label_2 = QtWidgets.QLabel(self.frame_2)
         self.label_2.setGeometry(QtCore.QRect(210, 20, 181, 16))
         self.label_2.setObjectName("label_2")
         self.label = QtWidgets.QLabel(self.frame_2)
         self.label.setGeometry(QtCore.QRect(30, 20, 151, 16))
         self.label.setObjectName("label")
+        
         self.onlineUsersArea = QtWidgets.QScrollArea(self.centralwidget)
         self.onlineUsersArea.setGeometry(QtCore.QRect(840, 30, 366, 611))
         self.onlineUsersArea.setWidgetResizable(True)
         self.onlineUsersArea.setObjectName("onlineUsersArea")
+        
         self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
         self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 364, 609))
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
@@ -111,6 +117,13 @@ class Ui_QMessenger(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget)
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout.setObjectName("horizontalLayout")
+        self.RefreshButton = QtWidgets.QPushButton(self.onlineUsersArea)
+        self.RefreshButton.setGeometry(QtCore.QRect(120, 520, 113, 32))
+        self.list = QtWidgets.QListWidget(self.onlineUsersArea)
+        self.list.itemClicked.connect(self.itemClickedOnList)
+        self.RefreshButton.setObjectName("RefreshButton")
+        self.RefreshButton.setText("Refresh")
+        self.RefreshButton.clicked.connect(self.updateListOfOnlineUsers)
         # self.OnlineUser = QtWidgets.QLabel(self.horizontalLayoutWidget)
         # self.OnlineUser.setAlignment(QtCore.Qt.AlignCenter)
         # self.OnlineUser.setObjectName("OnlineUser")
@@ -153,34 +166,61 @@ class Ui_QMessenger(object):
            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
            retval = msg.exec_()
         else:
-            for o in self.encryptorData.outputs:
-                if o.getsockname() is self.currentUser:
-                    message = self.ToSendText.toPlainText()
-                    send(o,message)
-
-
-    def msgbtn(i):
-        print("Button pressed is:",i.__dict__)
+            print("size of output list is ", self.encryptorData.outputs)
+            for o in self.encryptorData.inputs:
+                if (o is not self.encryptorData.mymessenger_server_socket) and (o is not self.encryptorData.loginserversocket):
+                    if str(o.getpeername()) in self.currentUser:
+                        print("getpeername is ", o.getpeername()," and ",self.currentUser)
+                        message = self.ToSendText.toPlainText()
+                        particularUserschatArea = self.encryptorData.chatAreaDictionary.get(str(o.getpeername())+"ChatArea")
+                        particularUserschatArea.setAlignment(QtCore.Qt.AlignRight)
+                        particularUserschatArea.append(message)
+                        self.ToSendText.clear()
+                        o.send(message.encode('utf-8'))
     #run this function everytime you get some changes in your list
     def updateListOfOnlineUsers(self):
+        print("List object is ", self.list)
         onlineUsersList = []
         for s in self.encryptorData.inputs:
             if s is self.encryptorData.loginserversocket:
                 pass
             elif s is self.encryptorData.mymessenger_server_socket:
                 #If it's you
-                onlineUsersList.append(s.getsockname())
                 pass
             else:
-                 onlineUserList.append(s.getsockname())
-                #If some socket goes down then we need to remove it from the inputs
-        list = QtWidgets.QListWidget(self.onlineUsersArea)
+                if str(s.getpeername())+"ChatArea" not in self.encryptorData.chatAreaDictionary:
+                    chatAreaObject = QtWidgets.QTextEdit(self.scrollAreaWidgetContents)
+                    chatAreaObject.setReadOnly(True)
+                    chatAreaObject.setGeometry(QtCore.QRect(0, 0, 381, 391))
+                    chatAreaObject.setObjectName(str(s.getpeername())+"ChatArea")
+                    self.encryptorData.chatAreaDictionary[chatAreaObject.objectName()] = chatAreaObject
+                onlineUsersList.append(s.getpeername() if s.getpeername() else s.getsockname())
+                #If some socket goes down then we need to remove it from the inputs     
+        self.list.clear()
         for i in onlineUsersList:
-            list.addItem(str(i))
-        list.itemClicked.connect(self.itemClickedOnList)
+            self.list.addItem(str(i))   
         self.outputs = self.encryptorData.outputs
+        print("online users list is ",onlineUsersList)
+
     def itemClickedOnList(self,item):
         self.currentUser = item.text()
+        for i in self.encryptorData.chatAreaDictionary:
+            if i is not item.text()+"ChatArea":
+                self.encryptorData.chatAreaDictionary.get(i).hide()
+        particularUserschatArea = self.encryptorData.chatAreaDictionary.get(item.text()+"ChatArea")
+        particularUserschatArea.show()
+        # print("Size is",self.encryptorData.chatAreaDictionary)
+        # if item.text() in self.encryptorData.chatAreaDictionary:
+        #     if item.text() is not None:        
+        #         self.verticalLayout = self.encryptorData.chatAreaDictionary[item.text()]
+        #     else:
+
+        #verticalLayout.addWidget(chatAreaObject)
+        #self.encryptorData.chatAreaDictionary[item.text()] = verticalLayout
+        # else:
+        #     print("It's not synchronised")
+            
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
@@ -190,4 +230,5 @@ if __name__ == "__main__":
     ui = Ui_QMessenger()
     ui.setupUi(QMessenger)
     QMessenger.show()
+    EncryptorData.EncryptorData().ui = ui
     sys.exit(app.exec_())
