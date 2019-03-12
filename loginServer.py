@@ -7,14 +7,22 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from threading import Thread
+from threading import Thread,Event
+import EncryptorData
 import select
-import socket, sys
+import socket, sys, pickle
 server = None
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(('localhost', 3490))
+        server.listen(5)
+        self.encryptordata  = EncryptorData.EncryptorData()
+        self.encryptordata.loginServer=server
+        print("loginServer is ",server)
+        self.encryptordata.loginServerInputs.extend([self.encryptordata.loginServer])
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.listWidget = QtWidgets.QListWidget(self.centralwidget)
@@ -44,51 +52,37 @@ class Ui_MainWindow(object):
         self.label.setText(_translate("MainWindow", "This is a login server window. Here you can see the number of users who are online"))
 
 class LoginServerThread(Thread):
-    def __init__(self,ui):
+    def __init__(self):
         Thread.__init__(self)
-        self.ui=ui
         self.listofUsers = []
+        self.encryptordata  = EncryptorData.EncryptorData()
+        self.inputs = []
+        self.outputs=[]
+        self.exceptions=[]
         self.running=True
+        self.switch = Event()
+        self.switch.clear()
     def run(self):
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.setblocking(0)
-        server.bind(('localhost', 3490))
-        server.listen(5)
-        inputs =[server,sys.stdin]
-        outputs= []
-        while self.running:
-            try:
-                    inputready,outputready,exceptready = select.select(inputs, outputs, inputs,1)
-            except Exception as e:
-                print("Got exception",e)
-                break
-            except Exception as e:
-                    print("Got exception", e)
-                    break
+        while self.switch.is_set:
+            inputready,outputready,exceptready = select.select(self.encryptordata.loginServerInputs, self.encryptordata.loginServerOutputs,self.encryptordata.loginServerInputs,1)
             for s in inputready:
-                if s is server:
-                    print("I am runing")
-                    client, address = server.accept()
-                    inputs.extend([client])
-                    for o in outputs:
-                        send(o,self.listofUsers)
+                if s is self.encryptordata.loginServer:
+                    client, address = self.encryptordata.loginServer.accept()
+                    self.encryptordata.loginServerInputs.extend([client])
+                    print("client's getpeername is ", client.getpeername(), " and the list now is", self.listofUsers)
+                    self.listofUsers.extend([client.getpeername()])
+                    self.sendingObject = pickle.dumps(self.listofUsers)
+                    print("sendingObject is ",self.sendingObject)
+                    for o in self.encryptordata.loginServerOutputs:
+                        o.send(self.sendingObject)
                     client.setblocking(0)
-                    outputs.append([client])
-                    pass
-
-                elif s is sys.stdin:
-                    msg = sys.stdin.readline()
-                    if msg is "exit":
-                        for o in outputs:
-                            send(o,"LoginServer Going down")
-                        server.close()
-                        exit()
+                    self.encryptordata.loginServerOutputs.extend([client])
                 else:
                     try:
                         pass
                     except Exception as e:
-                        inputs.remove(s)
-                        self.outputs.remove(s)
+                        self.encryptordata.loginServerInputs.remove(s)
+                        self.encryptordata.loginServerOutputs.remove(s)
 
 
 
@@ -96,9 +90,9 @@ if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
+    loginServer = LoginServerThread()
+    loginServer.start()
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
-    loginServer = LoginServerThread(ui)
-    loginServer.start()
     MainWindow.show()
     sys.exit(app.exec_())

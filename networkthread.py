@@ -22,22 +22,18 @@ class NetworkThread(Thread):
         self.receiveddict = self.encryptordata.receiveddict
         self.switch = Event()
         self.switch.clear()
-        print(self.inputs)
         #self.encryptor = Encryptor(b'7744')
 
     def run(self):
         '''the following will be called when the thread starts'''
         while not self.switch.is_set():
-            #print("in networkthread while")
-            #print(self.inputs)
             readable, writable, exceptional = select.select(self.encryptordata.inputs, self.encryptordata.outputs, self.encryptordata.inputs, 1)
             #print("after select")
             #print("printing the readables {}".format(readable))
             for s in readable:
                 if s is self.encryptordata.loginserversocket:
-                    data = s.recv()
-                    list = data.list
-                    self.encryptordata.onlineUsers=list
+                    data = s.recv(1024)
+                    self.encryptordata.onlineUsers = pickle.loads(data)
                     pass
                     # accepts the connections
                     # create a errorchekgin thread
