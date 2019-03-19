@@ -59,6 +59,7 @@ class EncryptorData(metaclass=Singleton):
         self.ecthread={}
         self.messengerthread={}
         self.chatAreaDictionary = {}
+        self.scrollAreaWidgetContents = None
         self.encryptorthread = {}
         self.displaymessage = {}
         self.sent_raw_message = {}

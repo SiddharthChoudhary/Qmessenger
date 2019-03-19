@@ -7,21 +7,25 @@
 # WARNING! All changes made in this file will be lost!
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox
 from threading import Thread
 import EncryptorData
 import socket
 import sys
 import select
+from Crypto.Cipher import AES
+import requests
 import signal
 from threading import Thread
 from networkthread import *
 ChatArea={}
 server=None
 dataTobeSent = None
-loginServerIp="155.246.65.190"
+loginServerIp="localhost"
 class Ui_QMessenger(object):
     def __init__(self):
+        Ui_QMessenger.EXIT_CODE_REBOOT = -12345678 
         self.currentUser   = None
         self.encryptorData = EncryptorData.EncryptorData()
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -47,6 +51,7 @@ class Ui_QMessenger(object):
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 379, 389))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
+        self.encryptorData.scrollAreaWidgetContents =  self.scrollAreaWidgetContents
 
         self.MessageArea.setWidget(self.scrollAreaWidgetContents)
         self.label_3 = QtWidgets.QLabel(self.centralwidget)
@@ -73,28 +78,39 @@ class Ui_QMessenger(object):
         self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_2.setObjectName("frame_2")
 
-        self.verticalLayoutWidget = QtWidgets.QWidget(self.frame_2)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(29, 40, 161, 391))
-        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
-        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
-        self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout_2.setObjectName("verticalLayout_2")
+        #Vertical layouts for sending and recieving messages are defined here, also we are attaching textEdits to them as well
+        self.verticalLayoutWidgetForSentMessages = QtWidgets.QWidget(self.frame_2)
+        self.verticalLayoutWidgetForSentMessages.setGeometry(QtCore.QRect(29, 40, 161, 391))
+        self.verticalLayoutWidgetForSentMessages.setObjectName("verticalLayoutWidget")
 
-        self.SendEncryptedMessagelistView = QtWidgets.QListView(self.verticalLayoutWidget)
-        self.SendEncryptedMessagelistView.setObjectName("SendEncryptedMessagelistView")
+        self.verticalLayoutForSentMessages = QtWidgets.QVBoxLayout(self.verticalLayoutWidgetForSentMessages)
+        self.verticalLayoutForSentMessages.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayoutForSentMessages.setObjectName("verticalLayoutForSentMessages")
 
-        self.verticalLayout_2.addWidget(self.SendEncryptedMessagelistView)
-        self.verticalLayoutWidget_2 = QtWidgets.QWidget(self.frame_2)
-        self.verticalLayoutWidget_2.setGeometry(QtCore.QRect(220, 40, 160, 391))
-        self.verticalLayoutWidget_2.setObjectName("verticalLayoutWidget_2")
-        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_2)
-        self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.textEditForSentMessages = QtWidgets.QTextEdit(self.verticalLayoutWidgetForSentMessages)
+        self.textEditForSentMessages.setObjectName("textEditForSentMessages")
+        self.verticalLayoutForSentMessages.addWidget(self.textEditForSentMessages)
 
-        self.RecieveEncryptedMessageListview = QtWidgets.QListView(self.verticalLayoutWidget_2)
-        self.RecieveEncryptedMessageListview.setObjectName("RecieveEncryptedMessageListview")
+        # self.SendEncryptedMessagelistView = QtWidgets.QListView(self.verticalLayoutWidget)
+        # self.SendEncryptedMessagelistView.setObjectName("SendEncryptedMessagelistView")
+        
+        # self.encryptorData.SendEncryptedMessageBoxModel = QtGui.QStandardItemModel(self.SendEncryptedMessagelistView)
+        # self.SendEncryptedMessagelistView.setModel(self.encryptorData.SendEncryptedMessageBoxModel)
+        
+        self.verticalLayoutWidgetForRecievedMessages = QtWidgets.QWidget(self.frame_2)
+        self.verticalLayoutWidgetForRecievedMessages.setGeometry(QtCore.QRect(220, 40, 160, 391))
+        self.verticalLayoutWidgetForRecievedMessages.setObjectName("verticalLayoutWidget_2")
 
-        self.verticalLayout_3.addWidget(self.RecieveEncryptedMessageListview)
+        self.verticalLayoutForRecievedMessagesVBOXLAYOUT = QtWidgets.QVBoxLayout(self.verticalLayoutWidgetForRecievedMessages)
+        self.verticalLayoutForRecievedMessagesVBOXLAYOUT.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayoutForRecievedMessagesVBOXLAYOUT.setObjectName("verticalLayoutForSentMessages")
+
+        self.textEditForRecievedMessages = QtWidgets.QTextEdit(self.verticalLayoutWidgetForRecievedMessages)
+        self.textEditForRecievedMessages.setObjectName("textEditForSentMessages")
+        self.verticalLayoutForRecievedMessagesVBOXLAYOUT.addWidget(self.textEditForRecievedMessages)
+        # self.RecieveEncryptedMessageListview = QtWidgets.QListView(self.verticalLayoutWidget_2)
+        # self.RecieveEncryptedMessageListview.setObjectName("RecieveEncryptedMessageListview")
+        
 
         self.label_2 = QtWidgets.QLabel(self.frame_2)
         self.label_2.setGeometry(QtCore.QRect(210, 20, 181, 16))
@@ -172,14 +188,54 @@ class Ui_QMessenger(object):
                     if str(o.getpeername()) in self.currentUser:
                         print("getpeername is ", o.getpeername()," and ",self.currentUser)
                         message = self.ToSendText.toPlainText()
+                        #encrypt message
                         particularUserschatArea = self.encryptorData.chatAreaDictionary.get(str(o.getpeername())+"ChatArea")
                         particularUserschatArea.setAlignment(QtCore.Qt.AlignRight)
                         particularUserschatArea.append(message)
                         self.ToSendText.clear()
-                        o.send(message.encode('utf-8'))
-    #run this function everytime you get some changes in your list
+                        message = self.encryptMessage(message) 
+                        self.textEditForSentMessages.append(str(message[1]))
+                        print("Message being sent is ",message)
+                        #print("Message encoded is", message.encode('utf-8'), "\n and the type is ", type(message))
+                        o.send(pickle.dumps(message))
+    #to encrypt the sending message by appending length to the encrypted message
+    def encryptMessage(self,message):
+        #to get the random number so that I can start traversing through that point
+        try:
+            encrypted_message_list = []
+            r = requests.get(url="http://quest.phy.stevens.edu:5050/main?lower=1&higher=194&amount=1")
+            startPosition = r.json()['finalrandomarray'][0]
+            key = ''
+            #To calculate the start position from where we are going to start traversing in a file
+            #if the startposition is greater than 194, i.e., minimum line number to be taken from a file then subtract it a bit
+            if startPosition > 194:
+                offsetAmount = startPosition-194
+                startPosition= startPosition-offsetAmount
+            #Read the quantum_keys file and then read 16 lines to generate a key of length 32 bytes, because each character is a byte
+            print("I got hit 1", type(message))
+            encrypted_message = str(startPosition)+':'
+            print("I got hit 2")
+            with open('Quantum_Keys.txt','r') as f:
+                keys = f.readlines()
+                for i in range(startPosition-1,startPosition-1+16):
+                    key = key + keys[i].replace("\n","")
+            print("Length of the original message is ", len(message.encode('utf-8')))
+            if len(message.encode('utf-8'))%16!=0:
+                while len(message.encode('utf-8'))%16!=0:
+                    message = " "+ message
+            print("Message is", message)
+            encryption_suite = AES.new(key, AES.MODE_CBC, 'EncryptionOf16By')
+            cipher_text = encryption_suite.encrypt(message)
+            print("Length of the cipher_text is ",len(cipher_text), "With cipher text ",cipher_text)
+            print("Length of the string cipher text is ", len(str(cipher_text))," with cipher text now is ", str(cipher_text))
+            encrypted_message_list  = [int(startPosition),cipher_text]
+            print("Encrypted message list is", encrypted_message_list)
+            return encrypted_message_list
+        except Exception as e:
+            print("Got exception while encrypting, restarting the window now",e)
+            #QtGui.qApp.exit( Ui_QMessenger.EXIT_CODE_REBOOT )
     def updateListOfOnlineUsers(self):
-        print("List object is ", self.list)
+        print("List object is ", self.encryptorData.onlineUsers," and the inputs is ", self.encryptorData.inputs)
         onlineUsersList = []
         for s in self.encryptorData.inputs:
             if s is self.encryptorData.loginserversocket:
@@ -188,8 +244,11 @@ class Ui_QMessenger(object):
                 #If it's you
                 pass
             else:
+                print("The socket is ",s)
                 if str(s.getpeername())+"ChatArea" not in self.encryptorData.chatAreaDictionary:
-                    chatAreaObject = QtWidgets.QTextEdit(self.scrollAreaWidgetContents)
+                    print("Over here")
+                    chatAreaObject = QtWidgets.QTextEdit()
+                    chatAreaObject.setParent(self.scrollAreaWidgetContents)
                     chatAreaObject.setReadOnly(True)
                     chatAreaObject.setGeometry(QtCore.QRect(0, 0, 381, 391))
                     chatAreaObject.setObjectName(str(s.getpeername())+"ChatArea")
@@ -205,6 +264,7 @@ class Ui_QMessenger(object):
     def itemClickedOnList(self,item):
         self.currentUser = item.text()
         for i in self.encryptorData.chatAreaDictionary:
+            print("The dictionary is ", self.encryptorData.chatAreaDictionary)
             if i is not item.text()+"ChatArea":
                 self.encryptorData.chatAreaDictionary.get(i).hide()
         particularUserschatArea = self.encryptorData.chatAreaDictionary.get(item.text()+"ChatArea")
@@ -228,7 +288,15 @@ if __name__ == "__main__":
     networkThread = NetworkThread()
     networkThread.start()
     ui = Ui_QMessenger()
-    ui.setupUi(QMessenger)
-    QMessenger.show()
     EncryptorData.EncryptorData().ui = ui
+    ui.setupUi(QMessenger)
+    networkThread.signal.connect(ui.updateListOfOnlineUsers)
+    QMessenger.show()
+    # currentExitCode = Ui_QMessenger.EXIT_CODE_REBOOT
+    # while currentExitCode == Ui_QMessenger.EXIT_CODE_REBOOT:
+    #     a = QtWidgets.QApplication(sys.argv)
+    #     w = QtWidgets.QMainWindow()
+    #     w.show()
+    #     currentExitCode = a.exec_()
+    #     a = None
     sys.exit(app.exec_())

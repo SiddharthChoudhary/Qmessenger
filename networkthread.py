@@ -1,9 +1,12 @@
 '''This is a thread module, creates a listener thread, accepts connections,
 receives data, and transfers data'''
 import EncryptorData
-import select, pickle, queue
-
-from PyQt5 import QtCore
+import select, pickle, queue, socket
+import re
+from Crypto.Cipher import AES
+import requests
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import QThread, pyqtSignal
 #from COMM.Encryptor import Encryptor
 from threading import Thread, Event
 from queue import Queue
@@ -12,9 +15,10 @@ import struct
 #from UI.messenger import Messenger
 #from twofish import Twofish
 import datetime
-class NetworkThread(Thread):
+class NetworkThread(QThread):
+    signal = pyqtSignal()
     def __init__(self):
-        Thread.__init__(self)
+        QThread.__init__(self)
         self.encryptordata  = EncryptorData.EncryptorData()
         self.inputs = self.encryptordata.inputs
         self.outputs = self.encryptordata.outputs
@@ -33,7 +37,24 @@ class NetworkThread(Thread):
             for s in readable:
                 if s is self.encryptordata.loginserversocket:
                     data = s.recv(1024)
-                    self.encryptordata.onlineUsers = pickle.loads(data)
+                    print("Online Users are", pickle.loads(data))
+                    for sockFromOnlineUsers in pickle.loads(data):
+                        if str(self.encryptordata.loginserversocket.getsockname()) != str(sockFromOnlineUsers):
+                            print("Socket is ",sockFromOnlineUsers)
+                            host, port = str(sockFromOnlineUsers).split(",")
+                            print("LoginserverSocket is ",self.encryptordata.loginserversocket.getsockname(),"and SocketFrom online User is", sockFromOnlineUsers)
+                            newsocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                            sockHost = re.search("'(.+?)'", host).group(1)
+                            sockPort = re.search("(.+?)\)",port).group(1)
+                            try:
+                                print("\n\n\n\n\t\t",port, "and the socket is", sockHost)
+                                newsocket.connect(("localhost",int(5008)))
+                            except Exception as e:
+                                print("Got Exception while creating your own sockets manually from the incoming list of LoginServer \n",e)
+                            print("this is your new socket", newsocket)
+                            self.encryptordata.inputs.extend([newsocket])
+                    self.signal.emit()
+                    #self.encryptordata.ui.updateListOfOnlineUsers()
                     pass
                     # accepts the connections
                     # create a errorchekgin thread
@@ -49,12 +70,17 @@ class NetworkThread(Thread):
                     #create a messengerthread
                 else:
                     data = s.recv(1024)
-                    print("Data is ",data.decode('utf-8')," from socket ",s)
+                    message_list = pickle.loads(data)
+                    raw_data = message_list[1]
+                    self.encryptordata.ui.textEditForRecievedMessages.append(str(raw_data))
+                    data = self.decryptMessage(message_list[1],int(message_list[0]))
+                    data = data.decode('utf-8')
                     if data:
                         particularUsersChatArea = self.encryptordata.chatAreaDictionary.get(str(s.getpeername())+"ChatArea")
                         particularUsersChatArea.setAlignment(QtCore.Qt.AlignLeft)
+                        particularUsersChatArea.append("\n")
                         particularUsersChatArea.append(str(data))
-                        self.encryptordata.senddict[s].put(data)
+                        #self.encryptordata.senddict[s].put(data)
                         if s not in self.encryptordata.outputs:
                             self.encryptordata.outputs.append(s)
                     else:
@@ -75,14 +101,14 @@ class NetworkThread(Thread):
                     # #decrypt
                     # self.encryptordata.displaymessage[s].put(datetime.date.strftime(datetime.datetime.now(),'%m/%d-%H:%M:%S')+"\nBurchard: {}".format(msg.decode('utf-8')))
 
-            for s in writable:
-                print("I got something now, it's my turn")
-                try:
-                    next_msg = self.encryptordata.senddict[s].get_nowait()
-                except queue.Empty:
-                    self.encryptordata.outputs.remove(s)
-                else:
-                    s.send(next_msg)
+    def decryptMessage(self,message,startPosition):
+        key = ''
+        with open('Quantum_Keys.txt','r') as f:
+                keys = f.readlines()
+                for i in range(int(startPosition)-1,int(startPosition)-1+16):
+                    key = key + keys[i].replace("\n","")
+        decryption_suite = AES.new(key, AES.MODE_CBC, 'EncryptionOf16By')
+        return decryption_suite.decrypt(message)
 
     def send_msg(self, sock, msg):
         # Prefix each message with a 4-byte length (network byte order)
