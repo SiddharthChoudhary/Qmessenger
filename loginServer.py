@@ -90,9 +90,9 @@ if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
-    loginServer = LoginServerThread()
-    loginServer.start()
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
+    loginServer = LoginServerThread()
+    loginServer.start()
     MainWindow.show()
     sys.exit(app.exec_())

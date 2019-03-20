@@ -193,8 +193,10 @@ class Ui_QMessenger(object):
                         particularUserschatArea.setAlignment(QtCore.Qt.AlignRight)
                         particularUserschatArea.append(message)
                         self.ToSendText.clear()
-                        message = self.encryptMessage(message) 
+                        message = self.encryptMessage(message)
+                        print("I came in")
                         self.textEditForSentMessages.append(str(message[1]))
+                        print("I came in this after textEditS")
                         print("Message being sent is ",message)
                         #print("Message encoded is", message.encode('utf-8'), "\n and the type is ", type(message))
                         o.send(pickle.dumps(message))
@@ -212,9 +214,9 @@ class Ui_QMessenger(object):
                 offsetAmount = startPosition-194
                 startPosition= startPosition-offsetAmount
             #Read the quantum_keys file and then read 16 lines to generate a key of length 32 bytes, because each character is a byte
-            print("I got hit 1", type(message))
+           # print("I got hit 1", type(message))
             encrypted_message = str(startPosition)+':'
-            print("I got hit 2")
+            #print("I got hit 2")
             with open('Quantum_Keys.txt','r') as f:
                 keys = f.readlines()
                 for i in range(startPosition-1,startPosition-1+16):
@@ -223,11 +225,11 @@ class Ui_QMessenger(object):
             if len(message.encode('utf-8'))%16!=0:
                 while len(message.encode('utf-8'))%16!=0:
                     message = " "+ message
-            print("Message is", message)
-            encryption_suite = AES.new(key, AES.MODE_CBC, 'EncryptionOf16By')
-            cipher_text = encryption_suite.encrypt(message)
-            print("Length of the cipher_text is ",len(cipher_text), "With cipher text ",cipher_text)
-            print("Length of the string cipher text is ", len(str(cipher_text))," with cipher text now is ", str(cipher_text))
+            encryption_suite = AES.new(key.encode('utf-8'), AES.MODE_CBC, ('EncryptionOf16By').encode('utf-8'))
+            print("Message is something like this", message)
+            cipher_text = encryption_suite.encrypt(message.encode('utf-8','ignore'))
+            #print("Length of the cipher_text is ",len(cipher_text), "With cipher text ",cipher_text)
+            #print("Length of the string cipher text is ", len(str(cipher_text))," with cipher text now is ", str(cipher_text))
             encrypted_message_list  = [int(startPosition),cipher_text]
             print("Encrypted message list is", encrypted_message_list)
             return encrypted_message_list
@@ -285,11 +287,11 @@ if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     QMessenger = QtWidgets.QMainWindow()
-    networkThread = NetworkThread()
-    networkThread.start()
     ui = Ui_QMessenger()
     EncryptorData.EncryptorData().ui = ui
     ui.setupUi(QMessenger)
+    networkThread = NetworkThread()
+    networkThread.start()
     networkThread.signal.connect(ui.updateListOfOnlineUsers)
     QMessenger.show()
     # currentExitCode = Ui_QMessenger.EXIT_CODE_REBOOT

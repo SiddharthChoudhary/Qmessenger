@@ -42,7 +42,7 @@ class NetworkThread(QThread):
                         if str(self.encryptordata.loginserversocket.getsockname()) != str(sockFromOnlineUsers):
                             print("Socket is ",sockFromOnlineUsers)
                             host, port = str(sockFromOnlineUsers).split(",")
-                            print("LoginserverSocket is ",self.encryptordata.loginserversocket.getsockname(),"and SocketFrom online User is", sockFromOnlineUsers)
+                            #print("LoginserverSocket is ",self.encryptordata.loginserversocket.getsockname(),"and SocketFrom online User is", sockFromOnlineUsers)
                             newsocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
                             sockHost = re.search("'(.+?)'", host).group(1)
                             sockPort = re.search("(.+?)\)",port).group(1)
@@ -107,7 +107,7 @@ class NetworkThread(QThread):
                 keys = f.readlines()
                 for i in range(int(startPosition)-1,int(startPosition)-1+16):
                     key = key + keys[i].replace("\n","")
-        decryption_suite = AES.new(key, AES.MODE_CBC, 'EncryptionOf16By')
+        decryption_suite = AES.new(key.encode('utf-8'), AES.MODE_CBC, ('EncryptionOf16By').encode('utf-8'))
         return decryption_suite.decrypt(message)
 
     def send_msg(self, sock, msg):
