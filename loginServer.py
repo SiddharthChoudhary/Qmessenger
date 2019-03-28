@@ -17,7 +17,7 @@ class Ui_MainWindow(object):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind(('localhost', 3490))
+        server.bind(('0.0.0.0', 3490))
         server.listen(5)
         self.encryptordata  = EncryptorData.EncryptorData()
         self.encryptordata.loginServer=server
@@ -79,11 +79,27 @@ class LoginServerThread(Thread):
                     self.encryptordata.loginServerOutputs.extend([client])
                 else:
                     try:
+                        data = s.recv(1024)
+                        message = data.decode('utf-8')
+                        if 'socketOff:' in message:
+                            mes,sockname = message.split(':') 
+                            for s in self.encryptordata.loginServerInputs:
+                                if sockname is s.getpeername():
+                                    self.encryptordata.loginServerInputs.remove(s)
+                                    self.encryptordata.loginServerOutputs.remove(s)
+                                    self.listofUsers.remove(sockname)
+                            for o in self.encryptordata.loginServerOutputs:
+                                self.sendingObject = pickle.dumps(self.listofUsers)
+                                o.send(self.sendingObject)
                         pass
                     except Exception as e:
                         self.encryptordata.loginServerInputs.remove(s)
                         self.encryptordata.loginServerOutputs.remove(s)
-
+            for s in exceptready:
+                self.encryptordata.inputs.remove(s)
+                if s in self.encryptordata.outputs:
+                    self.encryptordata.outputs.remove(s)
+                s.close()
 
 
 if __name__ == "__main__":

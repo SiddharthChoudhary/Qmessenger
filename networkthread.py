@@ -31,28 +31,31 @@ class NetworkThread(QThread):
     def run(self):
         '''the following will be called when the thread starts'''
         while not self.switch.is_set():
-            readable, writable, exceptional = select.select(self.encryptordata.inputs, self.encryptordata.outputs, self.encryptordata.inputs, 1)
-            #print("after select")
-            #print("printing the readables {}".format(readable))
+            try:
+                readable, writable, exceptional = select.select(self.encryptordata.inputs, self.encryptordata.outputs, self.encryptordata.inputs, 1)
+            except select.error as e:
+                print("printing the readables",e)
+            except socket.error as e:
+                print("Printing the exception", e)
             for s in readable:
                 if s is self.encryptordata.loginserversocket:
                     data = s.recv(1024)
                     print("Online Users are", pickle.loads(data))
                     for sockFromOnlineUsers in pickle.loads(data):
                         if str(self.encryptordata.loginserversocket.getsockname()) != str(sockFromOnlineUsers):
-                            print("Socket is ",sockFromOnlineUsers)
+                            #print("Socket is ",sockFromOnlineUsers)
                             host, port = str(sockFromOnlineUsers).split(",")
-                            print("LoginserverSocket is ",self.encryptordata.loginserversocket.getsockname(),"and SocketFrom online User is", sockFromOnlineUsers)
+                            #print("LoginserverSocket is ",self.encryptordata.loginserversocket.getsockname(),"and SocketFrom online User is", sockFromOnlineUsers)
                             newsocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
                             sockHost = re.search("'(.+?)'", host).group(1)
                             sockPort = re.search("(.+?)\)",port).group(1)
                             try:
                                 print("\n\n\n\n\t\t",port, "and the socket is", sockHost)
-                                newsocket.connect(("localhost",int(5008)))
+                                newsocket.connect((sockHost,int(5000)))
+                                self.encryptordata.inputs.extend([newsocket])
+                                print("this is your new socket", newsocket)
                             except Exception as e:
                                 print("Got Exception while creating your own sockets manually from the incoming list of LoginServer \n",e)
-                            print("this is your new socket", newsocket)
-                            self.encryptordata.inputs.extend([newsocket])
                     self.signal.emit()
                     #self.encryptordata.ui.updateListOfOnlineUsers()
                     pass
@@ -69,38 +72,52 @@ class NetworkThread(QThread):
                     # accept the connections
                     #create a messengerthread
                 else:
-                    data = s.recv(1024)
-                    message_list = pickle.loads(data)
-                    raw_data = message_list[1]
-                    self.encryptordata.ui.textEditForRecievedMessages.append(str(raw_data))
-                    data = self.decryptMessage(message_list[1],int(message_list[0]))
-                    data = data.decode('utf-8')
-                    if data:
-                        particularUsersChatArea = self.encryptordata.chatAreaDictionary.get(str(s.getpeername())+"ChatArea")
-                        particularUsersChatArea.setAlignment(QtCore.Qt.AlignLeft)
-                        particularUsersChatArea.append("\n")
-                        particularUsersChatArea.append(str(data))
-                        #self.encryptordata.senddict[s].put(data)
-                        if s not in self.encryptordata.outputs:
-                            self.encryptordata.outputs.append(s)
-                    else:
-                        if s in  self.encryptordata.outputs:
-                            self.encryptordata.outputs.remove(s)
+                    try:
+                        data = s.recv(1024)
+                        message_list = pickle.loads(data)
+                        raw_data = message_list[1]
+                        self.encryptordata.ui.textEditForRecievedMessages.append(str(raw_data))
+                        data = self.decryptMessage(message_list[1],int(message_list[0]))
+                        data = data.decode('utf-8')
+                        if data:
+                            particularUsersChatArea = self.encryptordata.chatAreaDictionary.get(str(s.getpeername())+"ChatArea")
+                            particularUsersChatArea.setAlignment(QtCore.Qt.AlignLeft)
+                            particularUsersChatArea.append("\n")
+                            particularUsersChatArea.append((str(data).strip()))
+                            #self.encryptordata.senddict[s].put(data)
+                            if s not in self.encryptordata.outputs:
+                                self.encryptordata.outputs.append(s)
+                        else:
+                            s.close()
+                            self.encryptordata.inputs.remove(s)
+                            if s in  self.encryptordata.outputs:
+                                self.encryptordata.outputs.remove(s)
+                            self.encryptordata.inputs.remove(s)
+                            del self.encryptordata.senddict[s]
+                    except socket.error as e:
                         self.encryptordata.inputs.remove(s)
-                        s.close()
-                        del self.encryptordata.senddict[s]
-                    # self.encryptordata.receiveddict[s].put(data)
-                    # data = pickle.loads(data)
-                    # key_id = data.key_id
-                    # enc_msg = data.enc_msg
-                    # key = self.encryptordata.key[key_id]
-                    # #tfh=Twofish(key.encode())
-                    # #msg = self.encryptor.decode(enc_msg, tfh)
-                    # msg =  enc_msg
-                    # self.encryptordata.received_raw_message[s].put("{} {}".format(key_id, enc_msg))
-                    # #decrypt
-                    # self.encryptordata.displaymessage[s].put(datetime.date.strftime(datetime.datetime.now(),'%m/%d-%H:%M:%S')+"\nBurchard: {}".format(msg.decode('utf-8')))
-
+                        print("Socket error!! Socket error!! Socket error",e)
+                    except EOFError as e:
+                        print("Getting the exception")
+                        message  =  "socketOff:"+str(s.getpeername())
+                        self.encryptordata.loginserversocket.send(message.encode('utf-8'))
+            for s in exceptional:
+                print("I came in exceptional method")
+                self.encryptordata.inputs.remove(s)
+                if s in self.encryptordata.outputs:
+                    self.encryptordata.outputs.remove(s)
+                s.close()
+                        # self.encryptordata.receiveddict[s].put(data)
+                        # data = pickle.loads(data)
+                        # key_id = data.key_id
+                        # enc_msg = data.enc_msg
+                        # key = self.encryptordata.key[key_id]
+                        # #tfh=Twofish(key.encode())
+                        # #msg = self.encryptor.decode(enc_msg, tfh)
+                        # msg =  enc_msg
+                        # self.encryptordata.received_raw_message[s].put("{} {}".format(key_id, enc_msg))
+                        # #decrypt
+                        # self.encryptordata.displaymessage[s].put(datetime.date.strftime(datetime.datetime.now(),'%m/%d-%H:%M:%S')+"\nBurchard: {}".format(msg.decode('utf-8'))
     def decryptMessage(self,message,startPosition):
         key = ''
         with open('Quantum_Keys.txt','r') as f:

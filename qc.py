@@ -22,14 +22,15 @@ from networkthread import *
 ChatArea={}
 server=None
 dataTobeSent = None
-loginServerIp="localhost"
+loginServerIp="155.246.65.190"
 class Ui_QMessenger(object):
     def __init__(self):
         Ui_QMessenger.EXIT_CODE_REBOOT = -12345678 
         self.currentUser   = None
         self.encryptorData = EncryptorData.EncryptorData()
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind(('localhost',5000))
+        self.server.setblocking(0)
+        self.server.bind(('0.0.0.0',5000))
         self.server.listen(5)
         self.encryptorData.mymessenger_server_socket = self.server
         self.encryptorData.inputs.extend([self.encryptorData.mymessenger_server_socket])
@@ -67,6 +68,7 @@ class Ui_QMessenger(object):
         self.ToSendText = QtWidgets.QPlainTextEdit(self.frame)
         self.ToSendText.setGeometry(QtCore.QRect(10, 10, 581, 31))
         self.ToSendText.setObjectName("ToSendText")
+        self.ToSendText.keyPressEvent = self.keyPressEvent
         self.SendButton = QtWidgets.QPushButton(self.frame)
         self.SendButton.setGeometry(QtCore.QRect(620, 10, 91, 31))
         self.SendButton.setObjectName("SendButton")
@@ -172,6 +174,31 @@ class Ui_QMessenger(object):
         #self.OnlineUser.setText(_translate("QMessenger", "#user234"))
         self.YourId.setText(_translate("QMessenger", "You"))
         self.updateListOfOnlineUsers()
+     
+    def keyPressEvent(self,e):
+        if e.key()  == QtCore.Qt.Key_Return :
+            self.sendData()
+        else:
+            QtWidgets.QPlainTextEdit.keyPressEvent(self.ToSendText,e)
+    def addLabel(self,verticalLayout):
+        _translate = QtCore.QCoreApplication.translate
+        textvalue = self.ToSendText.toPlainText()
+        self.ToSendText.clear()
+        messages_n=QtWidgets.QLabel(self.scrollAreaWidgetContents)
+        messages_n.setMinimumSize(QtCore.QSize(20, 20))
+        messages_n.setMaximumSize(QtCore.QSize(500, 20))
+        messages_n.setScaledContents(True)
+        messages_n.setObjectName("MessageLabel"+textvalue)
+        messages_n.setStyleSheet("""
+        .QLabel {
+            border: 2px solid black;
+            border-radius: 5px;            
+            }
+        """)
+        self.scrollAreaWidgetContents.addWidget(messages_n, 0, QtCore.Qt.AlignRight)
+        messages_n.setAlignment(QtCore.Qt.AlignRight) 
+        messages_n.setText(_translate("QMessenger", textvalue))
+
     def sendData(self):
         if self.currentUser is None:
            msg = QMessageBox()
@@ -191,10 +218,11 @@ class Ui_QMessenger(object):
                         #encrypt message
                         particularUserschatArea = self.encryptorData.chatAreaDictionary.get(str(o.getpeername())+"ChatArea")
                         particularUserschatArea.setAlignment(QtCore.Qt.AlignRight)
+                        # self.addLabel(particularUserschatArea['verticalLayout'])
                         particularUserschatArea.append(message)
                         self.ToSendText.clear()
                         message = self.encryptMessage(message) 
-                        self.textEditForSentMessages.append(str(message[1]))
+                        #self.textEditForSentMessages.append(str(message[1]))
                         print("Message being sent is ",message)
                         #print("Message encoded is", message.encode('utf-8'), "\n and the type is ", type(message))
                         o.send(pickle.dumps(message))
@@ -212,9 +240,7 @@ class Ui_QMessenger(object):
                 offsetAmount = startPosition-194
                 startPosition= startPosition-offsetAmount
             #Read the quantum_keys file and then read 16 lines to generate a key of length 32 bytes, because each character is a byte
-            print("I got hit 1", type(message))
             encrypted_message = str(startPosition)+':'
-            print("I got hit 2")
             with open('Quantum_Keys.txt','r') as f:
                 keys = f.readlines()
                 for i in range(startPosition-1,startPosition-1+16):
@@ -223,20 +249,16 @@ class Ui_QMessenger(object):
             if len(message.encode('utf-8'))%16!=0:
                 while len(message.encode('utf-8'))%16!=0:
                     message = " "+ message
-            print("Message is", message)
             encryption_suite = AES.new(key, AES.MODE_CBC, 'EncryptionOf16By')
             cipher_text = encryption_suite.encrypt(message)
-            print("Length of the cipher_text is ",len(cipher_text), "With cipher text ",cipher_text)
-            print("Length of the string cipher text is ", len(str(cipher_text))," with cipher text now is ", str(cipher_text))
             encrypted_message_list  = [int(startPosition),cipher_text]
-            print("Encrypted message list is", encrypted_message_list)
             return encrypted_message_list
         except Exception as e:
             print("Got exception while encrypting, restarting the window now",e)
             #QtGui.qApp.exit( Ui_QMessenger.EXIT_CODE_REBOOT )
     def updateListOfOnlineUsers(self):
-        print("List object is ", self.encryptorData.onlineUsers," and the inputs is ", self.encryptorData.inputs)
         onlineUsersList = []
+        print("EncryptorData Inputs", self.encryptorData.inputs)
         for s in self.encryptorData.inputs:
             if s is self.encryptorData.loginserversocket:
                 pass
@@ -244,16 +266,30 @@ class Ui_QMessenger(object):
                 #If it's you
                 pass
             else:
-                print("The socket is ",s)
                 if str(s.getpeername())+"ChatArea" not in self.encryptorData.chatAreaDictionary:
-                    print("Over here")
-                    chatAreaObject = QtWidgets.QTextEdit()
-                    chatAreaObject.setParent(self.scrollAreaWidgetContents)
+                    print("Creating for the very first users")
+                    chatAreaObject = {}
+                    # MessageArea = QtWidgets.QScrollArea(self.scrollAreaWidgetContents)
+                    # MessageArea.setGeometry(QtCore.QRect(20, 90, 761, 391))
+                    # MessageArea.setWidgetResizable(True)
+                    # MessageArea.setObjectName(str(s.getpeername())+"ChatArea")
+                    # vbar = self.MessageArea.verticalScrollBar()
+                    # scrollAreaWidgetContents = QtWidgets.QWidget()
+                    # scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 759, 389))
+                    # scrollAreaWidgetContents.setObjectName(str(s.getpeername())+"scrollAreaWidgetContents")
+                    # verticalLayout = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
+                    # verticalLayout.setObjectName(str(s.getpeername())+"verticalLayout")
+                    # MessageArea.setWidget(self.scrollAreaWidgetContents)
+                    # chatAreaObject['MessageArea'] = MessageArea
+                    # chatAreaObject['scrollAreaWidgetContents']= scrollAreaWidgetContents
+                    # chatAreaObject['verticalLayout'] = verticalLayout
+                    chatAreaObject = QtWidgets.QTextEdit(self.scrollAreaWidgetContents)
                     chatAreaObject.setReadOnly(True)
                     chatAreaObject.setGeometry(QtCore.QRect(0, 0, 381, 391))
                     chatAreaObject.setObjectName(str(s.getpeername())+"ChatArea")
                     self.encryptorData.chatAreaDictionary[chatAreaObject.objectName()] = chatAreaObject
-                onlineUsersList.append(s.getpeername() if s.getpeername() else s.getsockname())
+                    print("The socket is ", s)
+                    onlineUsersList.append(s.getpeername() if s.getpeername() else s.getsockname())
                 #If some socket goes down then we need to remove it from the inputs
         self.list.clear()
         for i in onlineUsersList:
@@ -285,13 +321,13 @@ if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     QMessenger = QtWidgets.QMainWindow()
-    networkThread = NetworkThread()
-    networkThread.start()
     ui = Ui_QMessenger()
     EncryptorData.EncryptorData().ui = ui
     ui.setupUi(QMessenger)
-    networkThread.signal.connect(ui.updateListOfOnlineUsers)
     QMessenger.show()
+    networkThread = NetworkThread()
+    networkThread.start()
+    networkThread.signal.connect(ui.updateListOfOnlineUsers)
     # currentExitCode = Ui_QMessenger.EXIT_CODE_REBOOT
     # while currentExitCode == Ui_QMessenger.EXIT_CODE_REBOOT:
     #     a = QtWidgets.QApplication(sys.argv)
