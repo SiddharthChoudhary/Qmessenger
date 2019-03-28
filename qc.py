@@ -22,14 +22,14 @@ from networkthread import *
 ChatArea={}
 server=None
 dataTobeSent = None
-loginServerIp="localhost"
+loginServerIp="155.246.65.190"
 class Ui_QMessenger(object):
     def __init__(self):
         Ui_QMessenger.EXIT_CODE_REBOOT = -12345678 
         self.currentUser   = None
         self.encryptorData = EncryptorData.EncryptorData()
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind(('localhost',5000))
+        self.server.bind(('0.0.0.0',5000))
         self.server.listen(5)
         self.encryptorData.mymessenger_server_socket = self.server
         self.encryptorData.inputs.extend([self.encryptorData.mymessenger_server_socket])

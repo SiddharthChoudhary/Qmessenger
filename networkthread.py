@@ -48,7 +48,7 @@ class NetworkThread(QThread):
                             sockPort = re.search("(.+?)\)",port).group(1)
                             try:
                                 print("\n\n\n\n\t\t",port, "and the socket is", sockHost)
-                                newsocket.connect(("localhost",int(5008)))
+                                newsocket.connect((sockHost,int(5000)))
                             except Exception as e:
                                 print("Got Exception while creating your own sockets manually from the incoming list of LoginServer \n",e)
                             print("this is your new socket", newsocket)
