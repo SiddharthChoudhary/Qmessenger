@@ -195,7 +195,7 @@ class Ui_QMessenger(object):
                         self.ToSendText.clear()
                         message = self.encryptMessage(message)
                         print("I came in")
-                        self.textEditForSentMessages.append(str(message[1]))
+                        #self.textEditForSentMessages.append(str(message[1]))
                         print("I came in this after textEditS")
                         print("Message being sent is ",message)
                         #print("Message encoded is", message.encode('utf-8'), "\n and the type is ", type(message))
