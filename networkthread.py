@@ -84,7 +84,7 @@ class NetworkThread(QThread):
                             particularUsersChatArea.setAlignment(QtCore.Qt.AlignLeft)
                             particularUsersChatArea.append("\n")
                             particularUsersChatArea.append((str(data).strip()))
-                            #self.encryptordata.senddict[s].put(data)
+                            self.encryptordata.senddict[s].put(data)
                             if s not in self.encryptordata.outputs:
                                 self.encryptordata.outputs.append(s)
                         else:

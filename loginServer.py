@@ -16,13 +16,13 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind(('0.0.0.0', 3490))
-        server.listen(5)
-        self.encryptordata  = EncryptorData.EncryptorData()
-        self.encryptordata.loginServer=server
-        print("loginServer is ",server)
-        self.encryptordata.loginServerInputs.extend([self.encryptordata.loginServer])
+        #server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # server.bind(('0.0.0.0', 3490))
+        # server.listen(5)
+        # self.encryptordata  = EncryptorData.EncryptorData()
+        # self.encryptordata.loginServer=server
+        # print("loginServer is ",server)
+        # self.encryptordata.loginServerInputs.extend([self.encryptordata.loginServer])
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.listWidget = QtWidgets.QListWidget(self.centralwidget)
@@ -63,6 +63,13 @@ class LoginServerThread(Thread):
         self.switch = Event()
         self.switch.clear()
     def run(self):
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(('0.0.0.0', 3490))
+        server.listen(5)
+        self.encryptordata  = EncryptorData.EncryptorData()
+        self.encryptordata.loginServer=server
+        print("loginServer is ",server)
+        self.encryptordata.loginServerInputs.extend([self.encryptordata.loginServer])
         while self.switch.is_set:
             inputready,outputready,exceptready = select.select(self.encryptordata.loginServerInputs, self.encryptordata.loginServerOutputs,self.encryptordata.loginServerInputs,1)
             for s in inputready:
@@ -104,11 +111,11 @@ class LoginServerThread(Thread):
 
 if __name__ == "__main__":
     import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
+    #app = QtWidgets.QApplication(sys.argv)
+    #MainWindow = QtWidgets.QMainWindow()
     loginServer = LoginServerThread()
     loginServer.start()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
+    #ui = Ui_MainWindow()
+    #ui.setupUi(MainWindow)
+    #MainWindow.show()
+    #sys.exit(app.exec_())
