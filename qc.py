@@ -239,6 +239,7 @@ class Ui_QMessenger(object):
     def updateListOfOnlineUsers(self):
         print("List object is ", self.encryptorData.onlineUsers," and the inputs is ", self.encryptorData.inputs)
         onlineUsersList = []
+        setForUniqueIpAddress = set()
         for s in self.encryptorData.inputs:
             if s is self.encryptorData.loginserversocket:
                 pass
@@ -248,18 +249,27 @@ class Ui_QMessenger(object):
             else:
                 print("The socket is ",s)
                 if str(s.getpeername())+"ChatArea" not in self.encryptorData.chatAreaDictionary:
-                    print("Over here")
                     chatAreaObject = QtWidgets.QTextEdit()
                     chatAreaObject.setParent(self.scrollAreaWidgetContents)
                     chatAreaObject.setReadOnly(True)
                     chatAreaObject.setGeometry(QtCore.QRect(0, 0, 381, 391))
                     chatAreaObject.setObjectName(str(s.getpeername())+"ChatArea")
                     self.encryptorData.chatAreaDictionary[chatAreaObject.objectName()] = chatAreaObject
-                onlineUsersList.append(s.getpeername() if s.getpeername() else s.getsockname())
+                    socketName = s.getpeername() if s.getpeername() else s.getsockname()
+                    onlineUsersList.append(socketName)
+                    host, port = str(socketName).split(",")
+                    sockHost = re.search("'(.+?)'", host).group(1)
+                    setForUniqueIpAddress.add(sockHost)
                 #If some socket goes down then we need to remove it from the inputs
         self.list.clear()
         for i in onlineUsersList:
-            self.list.addItem(str(i))
+            print('Set is ', setForUniqueIpAddress)
+            hostNew, portNew = str(i).split(",")
+            sockHostNew = re.search("'(.+?)'", hostNew).group(1)
+            print("sockHost is ", sockHost)
+            if sockHostNew in setForUniqueIpAddress:
+                self.list.addItem(str(i))
+                setForUniqueIpAddress.remove(sockHostNew)
         self.outputs = self.encryptorData.outputs
         print("online users list is ",onlineUsersList)
 
