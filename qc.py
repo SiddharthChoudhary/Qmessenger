@@ -189,7 +189,9 @@ class Ui_QMessenger(object):
                         print("getpeername is ", o.getpeername()," and ",self.currentUser)
                         message = self.ToSendText.toPlainText()
                         #encrypt message
-                        particularUserschatArea = self.encryptorData.chatAreaDictionary.get(str(o.getpeername())+"ChatArea")
+                        socketIp = str(o.getpeername()).split(",")
+                        socketIp =  re.search("'(.+?)'", socketIp).group(1)
+                        particularUserschatArea = self.encryptorData.chatAreaDictionary.get(str(socketIp)+"ChatArea")
                         particularUserschatArea.setAlignment(QtCore.Qt.AlignRight)
                         particularUserschatArea.append(message)
                         self.ToSendText.clear()
@@ -263,10 +265,7 @@ class Ui_QMessenger(object):
                 #If some socket goes down then we need to remove it from the inputs
         self.list.clear()
         for i in onlineUsersList:
-            print('Set is ', setForUniqueIpAddress)
-            hostNew, portNew = str(i).split(",")
-            sockHostNew = re.search("'(.+?)'", hostNew).group(1)
-            print("sockHost is ", sockHost)
+            sockHostNew = i
             if sockHostNew in setForUniqueIpAddress:
                 self.list.addItem(str(i))
                 setForUniqueIpAddress.remove(sockHostNew)
