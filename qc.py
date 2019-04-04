@@ -6,13 +6,13 @@
 #
 # WARNING! All changes made in this file will be lost!
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QAction, QInputDialog, QLineEdit
 from threading import Thread
 import EncryptorData
 import socket
-import sys
+import sys, re
 import select
 from Crypto.Cipher import AES
 import requests
@@ -23,8 +23,9 @@ ChatArea={}
 server=None
 dataTobeSent = None
 loginServerIp="155.246.65.190"
-class Ui_QMessenger(object):
+class Ui_QMessenger(QtWidgets.QWidget):
     def __init__(self):
+        super(Ui_QMessenger,self).__init__()
         Ui_QMessenger.EXIT_CODE_REBOOT = -12345678 
         self.currentUser   = None
         self.encryptorData = EncryptorData.EncryptorData()
@@ -42,9 +43,9 @@ class Ui_QMessenger(object):
         QMessenger.setObjectName("QMessenger")
         QMessenger.resize(1280, 800)
         # Quit flag
+        QMessenger.closeEvent = self.closeEvent
         self.centralwidget = QtWidgets.QWidget(QMessenger)
         self.centralwidget.setObjectName("centralwidget")
-
         self.MessageArea = QtWidgets.QScrollArea(self.centralwidget)
         self.MessageArea.setGeometry(QtCore.QRect(20, 90, 381, 391))
         self.MessageArea.setWidgetResizable(True)
@@ -216,7 +217,9 @@ class Ui_QMessenger(object):
                         print("getpeername is ", o.getpeername()," and ",self.currentUser)
                         message = self.ToSendText.toPlainText()
                         #encrypt message
-                        particularUserschatArea = self.encryptorData.chatAreaDictionary.get(str(o.getpeername())+"ChatArea")
+                        socketIp = str(o.getpeername()).split(",")
+                        socketIp = re.search("'(.+?)'", socketIp).group(1)
+                        particularUserschatArea = self.encryptorData.chatAreaDictionary.get(str(socketIp)+"ChatArea")
                         particularUserschatArea.setAlignment(QtCore.Qt.AlignRight)
                         # self.addLabel(particularUserschatArea['verticalLayout'])
                         particularUserschatArea.append(message)
@@ -226,6 +229,18 @@ class Ui_QMessenger(object):
                         print("Message being sent is ",message)
                         #print("Message encoded is", message.encode('utf-8'), "\n and the type is ", type(message))
                         o.send(pickle.dumps(message))
+    def closeEvent(self,event):
+        text, okPressed = QInputDialog.getText(self, "Enter Password", "Enter Password to Close",QLineEdit.Normal,"")
+        if okPressed and text == 'Stevens#!46%':
+            event.accept()
+        else:
+            event.ignore()
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setText("Wrong Password")
+            msg.setStandardButtons(QMessageBox.Ok)
+            returnedValue = msg.exec_()
+
     #to encrypt the sending message by appending length to the encrypted message
     def encryptMessage(self,message):
         #to get the random number so that I can start traversing through that point
@@ -258,6 +273,7 @@ class Ui_QMessenger(object):
             #QtGui.qApp.exit( Ui_QMessenger.EXIT_CODE_REBOOT )
     def updateListOfOnlineUsers(self):
         onlineUsersList = []
+        setForUniqueIpAddress = set()
         print("EncryptorData Inputs", self.encryptorData.inputs)
         for s in self.encryptorData.inputs:
             if s is self.encryptorData.loginserversocket:
@@ -286,14 +302,21 @@ class Ui_QMessenger(object):
                     chatAreaObject = QtWidgets.QTextEdit(self.scrollAreaWidgetContents)
                     chatAreaObject.setReadOnly(True)
                     chatAreaObject.setGeometry(QtCore.QRect(0, 0, 381, 391))
-                    chatAreaObject.setObjectName(str(s.getpeername())+"ChatArea")
+                    #creating a name based on the ip address instead of s.getpeername()
+                    socketName = s.getpeername() if s.getpeername() else s.getsockname()
+                    host, port = str(socketName).split(",")
+                    sockHost = re.search("'(.+?)'", host).group(1)
+                    chatAreaObject.setObjectName(str(sockHost)+"ChatArea")
                     self.encryptorData.chatAreaDictionary[chatAreaObject.objectName()] = chatAreaObject
-                    print("The socket is ", s)
-                    onlineUsersList.append(s.getpeername() if s.getpeername() else s.getsockname())
+                    onlineUsersList.append(sockHost)
+                    setForUniqueIpAddress.add(sockHost)
                 #If some socket goes down then we need to remove it from the inputs
         self.list.clear()
         for i in onlineUsersList:
-            self.list.addItem(str(i))
+                sockHostNew = i
+                if sockHostNew in setForUniqueIpAddress:
+                    self.list.addItem(str(i))
+                    setForUniqueIpAddress.remove(sockHostNew)
         self.outputs = self.encryptorData.outputs
         print("online users list is ",onlineUsersList)
 
@@ -321,6 +344,7 @@ if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     QMessenger = QtWidgets.QMainWindow()
+    QMessenger.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
     ui = Ui_QMessenger()
     EncryptorData.EncryptorData().ui = ui
     ui.setupUi(QMessenger)

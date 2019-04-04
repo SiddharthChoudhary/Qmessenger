@@ -80,11 +80,14 @@ class NetworkThread(QThread):
                         data = self.decryptMessage(message_list[1],int(message_list[0]))
                         data = data.decode('utf-8')
                         if data:
-                            particularUsersChatArea = self.encryptordata.chatAreaDictionary.get(str(s.getpeername())+"ChatArea")
-                            particularUsersChatArea.setAlignment(QtCore.Qt.AlignLeft)
+                            socketIp = str(s.getpeername()).split(",")
+                            print(socketIp)
+                            socketIp = re.search("'(.+?)'", str(socketIp)).group(1)
+                            particularUsersChatArea = self.encryptordata.chatAreaDictionary.get(str(socketIp)+"ChatArea")
+                            #particularUsersChatArea.setAlignment(QtCore.Qt.AlignLeft)
                             particularUsersChatArea.append("\n")
                             particularUsersChatArea.append((str(data).strip()))
-                            self.encryptordata.senddict[s].put(data)
+                            #self.encryptordata.senddict[s].put(data)
                             if s not in self.encryptordata.outputs:
                                 self.encryptordata.outputs.append(s)
                         else:
