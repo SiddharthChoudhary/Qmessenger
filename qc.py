@@ -194,16 +194,15 @@ class Ui_QMessenger(QtWidgets.QWidget):
            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
            retval = msg.exec_()
         else:
-            print("size of output list is ", self.encryptorData.outputs)
+            print("size of output list is ", self.encryptorData.inputs)
             for o in self.encryptorData.inputs:
                 if (o is not self.encryptorData.mymessenger_server_socket) and (o is not self.encryptorData.loginserversocket):
-                    if str(o.getpeername()) in self.currentUser:
-                        print("getpeername is ", o.getpeername()," and ",self.currentUser)
+                    host, port = str(o.getpeername()).split(",")
+                    sockHost = str(re.search("'(.+?)'", host).group(1))
+                    if sockHost in self.currentUser:
                         message = self.ToSendText.toPlainText()
                         #encrypt message
-                        socketIp = str(o.getpeername()).split(",")
-                        socketIp =  re.search("'(.+?)'", socketIp).group(1)
-                        particularUserschatArea = self.encryptorData.chatAreaDictionary.get(str(socketIp)+"ChatArea")
+                        particularUserschatArea = self.encryptorData.chatAreaDictionary.get(sockHost+"ChatArea")
                         particularUserschatArea.setAlignment(QtCore.Qt.AlignRight)
                         particularUserschatArea.append(message)
                         self.ToSendText.clear()
@@ -272,28 +271,27 @@ class Ui_QMessenger(QtWidgets.QWidget):
                 #If it's you
                 pass
             else:
-                print("The socket is ",s)
-                if str(s.getpeername())+"ChatArea" not in self.encryptorData.chatAreaDictionary:
+                socketName = s.getpeername() if s.getpeername() else s.getsockname()
+                host, port = str(socketName).split(",")
+                sockHost = re.search("'(.+?)'", host).group(1)
+                if str(sockHost)+"ChatArea" not in self.encryptorData.chatAreaDictionary:
                     chatAreaObject = QtWidgets.QTextEdit()
                     chatAreaObject.setParent(self.scrollAreaWidgetContents)
                     chatAreaObject.setReadOnly(True)
                     chatAreaObject.setGeometry(QtCore.QRect(0, 0, 381, 391))
-                    chatAreaObject.setObjectName(str(s.getpeername())+"ChatArea")
+                    chatAreaObject.setObjectName(sockHost+"ChatArea")
                     self.encryptorData.chatAreaDictionary[chatAreaObject.objectName()] = chatAreaObject
-                    socketName = s.getpeername() if s.getpeername() else s.getsockname()
-                    onlineUsersList.append(socketName)
-                    host, port = str(socketName).split(",")
-                    sockHost = re.search("'(.+?)'", host).group(1)
+                    onlineUsersList.append(sockHost)
                     setForUniqueIpAddress.add(sockHost)
                 #If some socket goes down then we need to remove it from the inputs
         self.list.clear()
+        print("online users list is ",onlineUsersList)
         for i in onlineUsersList:
             sockHostNew = i
             if sockHostNew in setForUniqueIpAddress:
                 self.list.addItem(str(i))
                 setForUniqueIpAddress.remove(sockHostNew)
         self.outputs = self.encryptorData.outputs
-        print("online users list is ",onlineUsersList)
 
     def itemClickedOnList(self,item):
         self.currentUser = item.text()
