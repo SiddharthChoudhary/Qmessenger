@@ -178,7 +178,7 @@ class Ui_QMessenger(QtWidgets.QWidget):
         self.updateListOfOnlineUsers()
 
     def keyPressEvent(self,e):
-        if len(self.ToSendText.toPlainText()) > 2 and e.key() != QtCore.Qt.Key_Backspace:
+        if len(self.ToSendText.toPlainText()) > 200 and e.key() != QtCore.Qt.Key_Backspace:
             e.ignore()
         elif e.key()  == QtCore.Qt.Key_Return :
             self.sendData()
@@ -208,7 +208,7 @@ class Ui_QMessenger(QtWidgets.QWidget):
                         self.ToSendText.clear()
                         message = self.encryptMessage(message)
                         print("I came in")
-                        #self.textEditForSentMessages.append(str(message[1]))
+                        self.textEditForSentMessages.append(str(message[1]))
                         print("I came in this after textEditS")
                         print("Message being sent is ",message)
                         #print("Message encoded is", message.encode('utf-8'), "\n and the type is ", type(message))
