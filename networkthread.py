@@ -32,26 +32,26 @@ class NetworkThread(QThread):
         '''the following will be called when the thread starts'''
         while not self.switch.is_set():
             readable, writable, exceptional = select.select(self.encryptordata.inputs, self.encryptordata.outputs, self.encryptordata.inputs, 1)
-            #print("after select")
-            #print("printing the readables {}".format(readable))
+            ##print("after select")
+            ##print("printing the readables {}".format(readable))
             for s in readable:
                 if s is self.encryptordata.loginserversocket:
                     data = s.recv(1024)
-                    print("Online Users are", pickle.loads(data))
+                    #print("Online Users are", pickle.loads(data))
                     for sockFromOnlineUsers in pickle.loads(data):
                         if str(self.encryptordata.loginserversocket.getsockname()) != str(sockFromOnlineUsers):
-                            print("Socket is ",sockFromOnlineUsers)
+                            #print("Socket is ",sockFromOnlineUsers)
                             host, port = str(sockFromOnlineUsers).split(",")
-                            #print("LoginserverSocket is ",self.encryptordata.loginserversocket.getsockname(),"and SocketFrom online User is", sockFromOnlineUsers)
+                            ##print("LoginserverSocket is ",self.encryptordata.loginserversocket.getsockname(),"and SocketFrom online User is", sockFromOnlineUsers)
                             newsocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
                             sockHost = re.search("'(.+?)'", host).group(1)
                             sockPort = re.search("(.+?)\)",port).group(1)
                             try:
-                                print("\n\n\n\n\t\t",port, "and the socket is", sockHost)
+                                #print("\n\n\n\n\t\t",port, "and the socket is", sockHost)
                                 newsocket.connect((sockHost,int(5000)))
                             except Exception as e:
                                 print("Got Exception while creating your own sockets manually from the incoming list of LoginServer \n",e)
-                            print("this is your new socket", newsocket)
+                            #print("this is your new socket", newsocket)
                             self.encryptordata.inputs.extend([newsocket])
                     self.signal.emit()
                     #self.encryptordata.ui.updateListOfOnlineUsers()
@@ -114,7 +114,7 @@ class NetworkThread(QThread):
 
     def send_msg(self, sock, msg):
         # Prefix each message with a 4-byte length (network byte order)
-        print(len(msg))
+        #print(len(msg))
         msg = struct.pack('>I', len(msg)) + msg
         sock.sendall(msg)
 
