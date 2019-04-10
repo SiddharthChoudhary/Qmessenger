@@ -39,6 +39,8 @@ class Ui_QMessenger(QtWidgets.QWidget):
         self.loginServer.connect((loginServerIp,3490))
         self.encryptorData.loginserversocket = self.loginServer
         self.encryptorData.inputs.extend([self.encryptorData.loginserversocket])
+        self.onlineUsersList = []
+        self.setForUniqueIpAddress = set()
     def setupUi(self, QMessenger):
         QMessenger.setObjectName("QMessenger")
         QMessenger.resize(1280, 800)
@@ -61,7 +63,7 @@ class Ui_QMessenger(QtWidgets.QWidget):
         self.label_3.setGeometry(QtCore.QRect(20, 60, 80, 26))
         self.label_3.setFont(self.newfont)
         self.label_3.setObjectName("label_3")
-
+    
         self.frame = QtWidgets.QFrame(self.centralwidget)
         self.frame.setGeometry(QtCore.QRect(20, 510, 1000, 300))
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -272,8 +274,7 @@ class Ui_QMessenger(QtWidgets.QWidget):
             #QtGui.qApp.exit( Ui_QMessenger.EXIT_CODE_REBOOT )
     def updateListOfOnlineUsers(self):
         print("List object is ", self.encryptorData.onlineUsers," and the inputs is ", self.encryptorData.inputs)
-        onlineUsersList = []
-        setForUniqueIpAddress = set()
+        
         for s in self.encryptorData.inputs:
             if s is self.encryptorData.loginserversocket:
                 pass
@@ -284,23 +285,26 @@ class Ui_QMessenger(QtWidgets.QWidget):
                 socketName = s.getpeername() if s.getpeername() else s.getsockname()
                 host, port = str(socketName).split(",")
                 sockHost = re.search("'(.+?)'", host).group(1)
+                #only gets executed if this is a new user, i.e., there is no chatAreaDictionary already there for this
                 if str(sockHost)+"ChatArea" not in self.encryptorData.chatAreaDictionary:
                     chatAreaObject = QtWidgets.QTextEdit()
                     chatAreaObject.setParent(self.scrollAreaWidgetContents)
                     chatAreaObject.setReadOnly(True)
-                    chatAreaObject.setGeometry(QtCore.QRect(0, 0, 381, 391))
+                    chatAreaObject.setGeometry(QtCore.QRect(0, 0, 750, 700))
                     chatAreaObject.setObjectName(sockHost+"ChatArea")
                     self.encryptorData.chatAreaDictionary[chatAreaObject.objectName()] = chatAreaObject
-                    onlineUsersList.append(sockHost)
-                    setForUniqueIpAddress.add(sockHost)
+                    self.onlineUsersList.append(sockHost)
+                    self.setForUniqueIpAddress.add(sockHost)
+                elif str(sockHost)+"ChatArea" in self.encryptorData.chatAreaDictionary:
+                    self.setForUniqueIpAddress.add(sockHost)
                 #If some socket goes down then we need to remove it from the inputs
         self.list.clear()
-        #print("online users list is ",onlineUsersList)
-        for i in onlineUsersList:
+        print("online users list is ",self.onlineUsersList, "and ", self.setForUniqueIpAddress)
+        for i in self.onlineUsersList:
             sockHostNew = i
-            if sockHostNew in setForUniqueIpAddress:
+            if sockHostNew in self.setForUniqueIpAddress:
                 self.list.addItem(str(i))
-                setForUniqueIpAddress.remove(sockHostNew)
+                self.setForUniqueIpAddress.remove(sockHostNew)
         self.outputs = self.encryptorData.outputs
 
     def itemClickedOnList(self,item):
