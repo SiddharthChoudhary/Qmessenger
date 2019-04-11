@@ -93,7 +93,7 @@ class Ui_QMessenger(QtWidgets.QWidget):
         self.textEditForSentMessages = QtWidgets.QTextEdit(self.verticalLayoutWidgetForSentMessages)
         self.textEditForSentMessages.setObjectName("textEditForSentMessages")
         self.verticalLayoutForSentMessages.addWidget(self.textEditForSentMessages)
-
+        self.textEditForSentMessages.setReadOnly(True)
         # self.SendEncryptedMessagelistView = QtWidgets.QListView(self.verticalLayoutWidget)
         # self.SendEncryptedMessagelistView.setObjectName("SendEncryptedMessagelistView")
         
@@ -109,8 +109,9 @@ class Ui_QMessenger(QtWidgets.QWidget):
         self.verticalLayoutForRecievedMessagesVBOXLAYOUT.setObjectName("verticalLayoutForSentMessages")
 
         self.textEditForRecievedMessages = QtWidgets.QTextEdit(self.verticalLayoutWidgetForRecievedMessages)
-        self.textEditForRecievedMessages.setObjectName("textEditForSentMessages")
+        self.textEditForRecievedMessages.setObjectName("textEditForRecievedMessages")
         self.verticalLayoutForRecievedMessagesVBOXLAYOUT.addWidget(self.textEditForRecievedMessages)
+        self.textEditForRecievedMessages.setReadOnly(True)
         # self.RecieveEncryptedMessageListview = QtWidgets.QListView(self.verticalLayoutWidget_2)
         # self.RecieveEncryptedMessageListview.setObjectName("RecieveEncryptedMessageListview")
         
@@ -154,7 +155,7 @@ class Ui_QMessenger(QtWidgets.QWidget):
         self.horizontalLayout_5.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
         self.YourId = QtWidgets.QLabel(self.horizontalLayoutWidget_5)
-        self.YourId.setObjectName("YourId")
+        self.YourId.setObjectName("Your Ip")
         self.horizontalLayout_5.addWidget(self.YourId)
         self.onlineUsersArea.setWidget(self.scrollAreaWidgetContents_2)
         QMessenger.setCentralWidget(self.centralwidget)
@@ -170,14 +171,16 @@ class Ui_QMessenger(QtWidgets.QWidget):
         self.label_3.setText(_translate("QMessenger", "Messages"))
         self.ToSendText.setToolTip(_translate("QMessenger", "<html><head/><body><p>Type your text here...</p></body></html>"))
         self.SendButton.setText(_translate("QMessenger", "Send"))
-        self.label_2.setText(_translate("QMessenger", "Recieve Encrypted message"))
+        self.label_2.setText(_translate("QMessenger", "Recieved Encrypted message"))
         self.label.setText(_translate("QMessenger", "Sent Encrypted message"))
         #self.OnlineUser.setText(_translate("QMessenger", "#user234"))
-        self.YourId.setText(_translate("QMessenger", "You"))
+        self.YourId.setText(_translate("QMessenger", "Your Ip: "+ str(socket.gethostbyname('localhost'))))
         self.updateListOfOnlineUsers()
      
     def keyPressEvent(self,e):
-        if e.key()  == QtCore.Qt.Key_Return :
+        if len(self.ToSendText.toPlainText())>200 and e.key() != QtCore.Qt.Key_Backspace:
+            e.ignore()
+        elif e.key()  == QtCore.Qt.Key_Return :
             self.sendData()
         else:
             QtWidgets.QPlainTextEdit.keyPressEvent(self.ToSendText,e)
@@ -201,28 +204,40 @@ class Ui_QMessenger(QtWidgets.QWidget):
         messages_n.setText(_translate("QMessenger", textvalue))
 
     def sendData(self):
+        message = self.ToSendText.toPlainText()
         if self.currentUser is None:
-           msg = QMessageBox()
+           msg = QMessageBox(QMessenger)
            msg.setIcon(QMessageBox.Information)
            msg.setText("You haven't selected any user yet to chat with")
            msg.setInformativeText("Please click on any user from the right side of your User's list")
            msg.setWindowTitle("No User Selected")
            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
            retval = msg.exec_()
+        elif message is None:
+           msg = QMessageBox(QMessenger)
+           msg.setIcon(QMessageBox.Information)
+           msg.setText("Message is Empty")
+           msg.setWindowTitle("Message is Null")
+           msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         else:
             print("size of output list is ", self.encryptorData.outputs)
             for o in self.encryptorData.inputs:
+                print("Does this work")
                 if (o is not self.encryptorData.mymessenger_server_socket) and (o is not self.encryptorData.loginserversocket):
                     if str(o.getpeername()) in self.currentUser:
                         print("getpeername is ", o.getpeername()," and ",self.currentUser)
-                        message = self.ToSendText.toPlainText()
                         #encrypt message
                         socketIp = str(o.getpeername()).split(",")
                         socketIp = re.search("'(.+?)'", socketIp).group(1)
                         particularUserschatArea = self.encryptorData.chatAreaDictionary.get(str(socketIp)+"ChatArea")
-                        particularUserschatArea.setAlignment(QtCore.Qt.AlignRight)
+                        #particularUserschatArea.setAlignment(QtCore.Qt.AlignRight)
                         # self.addLabel(particularUserschatArea['verticalLayout'])
                         particularUserschatArea.append(message)
+                        cursor = particularUserschatArea.textCursor()
+                        textBlockFormat = cursor.blockFormat()
+                        textBlockFormat.setAlignment(QtCore.Qt.AlignRight)
+                        cursor.mergeBlockFormat(textBlockFormat)
+                        particularUserschatArea.setTextCursor(cursor)
                         self.ToSendText.clear()
                         message = self.encryptMessage(message) 
                         #self.textEditForSentMessages.append(str(message[1]))
@@ -345,6 +360,8 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     QMessenger = QtWidgets.QMainWindow()
     QMessenger.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+    screen = app.primaryScreen()
+    QMessenger.setFixedSize(screen.size().width(),screen.size().height())
     ui = Ui_QMessenger()
     EncryptorData.EncryptorData().ui = ui
     ui.setupUi(QMessenger)
