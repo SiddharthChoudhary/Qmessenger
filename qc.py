@@ -58,6 +58,10 @@ class Ui_QMessenger(QtWidgets.QWidget):
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.encryptorData.scrollAreaWidgetContents =  self.scrollAreaWidgetContents
 
+        self.IntroLabel = QtWidgets.QLabel(self.centralwidget)
+        self.IntroLabel.setGeometry(QtCore.QRect(10,20,1000,30))
+        self.IntroLabel.setText("Chat with the Burchard Building User and see the encrypted and the decrypted messages ")
+        self.IntroLabel.setFont(self.newfont)
         self.MessageArea.setWidget(self.scrollAreaWidgetContents)
         self.label_3 = QtWidgets.QLabel(self.centralwidget)
         self.label_3.setGeometry(QtCore.QRect(20, 60, 80, 26))
