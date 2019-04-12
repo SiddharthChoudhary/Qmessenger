@@ -81,7 +81,12 @@ class NetworkThread(QThread):
                         particularUsersChatArea = self.encryptordata.chatAreaDictionary.get(str(socketIp)+"ChatArea")
                         #particularUsersChatArea.setAlignment(QtCore.Qt.AlignLeft)
                         particularUsersChatArea.append("\n")
-                        particularUsersChatArea.append(str(data))
+                        particularUsersChatArea.append(str(data).strip())
+                        cursor = particularUserschatArea.textCursor()
+                        textBlockFormat = cursor.blockFormat()
+                        textBlockFormat.setAlignment(QtCore.Qt.AlignLeft)
+                        cursor.mergeBlockFormat(textBlockFormat)
+                        particularUserschatArea.setTextCursor(cursor)
                         #self.encryptordata.senddict[s].put(data)
                         if s not in self.encryptordata.outputs:
                             self.encryptordata.outputs.append(s)
