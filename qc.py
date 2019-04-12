@@ -197,6 +197,7 @@ class Ui_QMessenger(QtWidgets.QWidget):
         else:
             QtWidgets.QPlainTextEdit.keyPressEvent(self.ToSendText,e)
     def sendData(self):
+        message = self.ToSendText.toPlainText()
         if self.currentUser is None:
            msg = QMessageBox(QMessenger)
            msg.setIcon(QMessageBox.Information)
@@ -205,6 +206,11 @@ class Ui_QMessenger(QtWidgets.QWidget):
            msg.setWindowTitle("No User Selected")
            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
            retval = msg.exec_()
+        elif message is None:
+            msg = QMessageBox(QMessenger)
+            msg.setIcon(QMessageBox.Information)
+            msg.setText("Empty Messages not allowed")
+            msg.setStandardButtons(QMessageBox.Ok)
         else:
             ##print("size of output list is ", self.encryptorData.inputs)
             for o in self.encryptorData.inputs:
@@ -212,11 +218,15 @@ class Ui_QMessenger(QtWidgets.QWidget):
                     host, port = str(o.getpeername()).split(",")
                     sockHost = str(re.search("'(.+?)'", host).group(1))
                     if sockHost in self.currentUser:
-                        message = self.ToSendText.toPlainText()
                         #encrypt message
                         particularUserschatArea = self.encryptorData.chatAreaDictionary.get(sockHost+"ChatArea")
-                        particularUserschatArea.setAlignment(QtCore.Qt.AlignRight)
-                        particularUserschatArea.append('{:20}'.format(message))
+                        #particularUserschatArea.setAlignment(QtCore.Qt.AlignRight)
+                        particularUserschatArea.append(str(message).strip())
+                        cursor = particularUserschatArea.textCursor()
+                        textBlockFormat = cursor.blockFormat()
+                        textBlockFormat.setAlignment(QtCore.Qt.AlignRight)
+                        cursor.mergeBlockFormat(textBlockFormat)
+                        particularUserschatArea.setTextCursor(cursor)
                         self.ToSendText.clear()
                         message = self.encryptMessage(message)
                         #print("I came in")

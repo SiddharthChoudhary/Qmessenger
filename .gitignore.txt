@@ -1,4 +1,11 @@
 __pycache__
+<<<<<<< HEAD
 *.pyc
 *.pc
 .DS_Store
+=======
+.DS_Stores
+*.pyc
+*.pc
+*.pyo
+>>>>>>> cfcb828e5baafb4963b316f19c9f058a69a920b2
