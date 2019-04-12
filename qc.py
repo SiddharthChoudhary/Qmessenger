@@ -44,7 +44,7 @@ class Ui_QMessenger(QtWidgets.QWidget):
     def setupUi(self, QMessenger):
         QMessenger.setObjectName("QMessenger")
         QMessenger.resize(1280, 800)
-        #QMessenger.closeEvent = self.closeEvent
+        QMessenger.closeEvent = self.closeEvent
         # Quit flag
         self.centralwidget = QtWidgets.QWidget(QMessenger)
         self.centralwidget.setObjectName("centralwidget")
